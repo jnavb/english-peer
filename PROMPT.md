@@ -10,7 +10,7 @@ Run them exactly like that. Don't read transcripts or history files yourself.
 
 ## 1. Get the data
 
-Run `coach.ts context`. It returns JSON with:
+Run `cli.ts context`. It returns JSON with:
 - `days` / `prompts`: the batch to review, already cleaned up (pasted text,
   images, shell commands, bare slash commands, "ok"/"yes" replies and automated
   runs are removed). It starts with yesterday. When yesterday was quiet or
@@ -86,7 +86,7 @@ Also produce:
     from casual to more careful
 
   Before you suggest a verb, phrasal verb or word as "new", check it with
-  `coach.ts used <word> <word> ...`. Only suggest it if the count is 0 or 1.
+  `cli.ts used <word> <word> ...`. Only suggest it if the count is 0 or 1.
   Never suggest anything in `already_taught`.
 
 If my English was clean, say so in the headline. Don't invent problems to
@@ -96,7 +96,7 @@ fill the page.
 
 Write the JSON with the Write tool to
 `__INBOX__/entry.json`, then run
-`coach.ts record __INBOX__/entry.json`.
+`cli.ts record __INBOX__/entry.json`.
 If validation fails, fix the file and run it again. Don't use heredocs or
 pipes, because unattended runs block them.
 
@@ -129,7 +129,7 @@ pipes, because unattended runs block them.
 
 ## 4. Render and publish
 
-1. Run `coach.ts render`. It prints the path of a finished HTML page built from
+1. Run `cli.ts render`. It prints the path of a finished HTML page built from
    a fixed template. **Don't edit or restyle it.** The design stays the same
    every day.
 2. If this session has no Artifact tool (unattended `claude -p` runs don't),
@@ -139,6 +139,6 @@ pipes, because unattended runs block them.
      with `url` set to it so the link never changes
    - if it's null: publish a new artifact with `icon: "book"` and the
      description "Daily review of the English in my Claude Code prompts.",
-     then run `coach.ts set-url <url>`
+     then run `cli.ts set-url <url>`
 
 End with one line: the artifact link and the headline.

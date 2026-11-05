@@ -1,43 +1,17 @@
-#!/usr/bin/env bun
-const DOC = `english-peer: pulls the prompts you typed into Claude Code and keeps a
-searchable history of every daily review.
-
-Data (in $ENGLISH_PEER_DATA, default ~/.local/share/english-peer):
-  journal.jsonl   one line per review run (append-only, greppable)
-  patterns.json   recurring mistakes: definitions; stats are derived from the journal
-  config.json     artifact url, filters, batch sizes
-
-Commands:
-  context  [--date D | --since D [--until D]]   everything the daily run needs, as JSON
-  prompts  [--date D | --since D [--until D]] [--text]
-  record   FILE.json | -                        validate + append a review, merge new patterns
-  render   [--run DATE]                         build the artifact page for a review
-  search   TERM                                 grep findings, vocab and patterns
-  patterns [--all]                              recurring mistakes with stats
-  stats                                         last 14 reviews
-  backlog                                       unreviewed days with prompt counts
-  set-url  URL                                  remember the artifact link for later runs
-  used     WORD [WORD...]                       how often I've written each word/phrase, ever
-
-Day selection (no flags): unreviewed days, newest first, starting with
-yesterday. Older days are added until the batch has \`target_prompts\`,
-without going past \`max_prompts\`. A quiet day therefore pulls in backlog,
-and the history before the first run gets worked through over time.`;
-
+// The review commands: reading prompts, recording reviews and rendering the page.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 
-const HOME = homedir();
-const CODE = import.meta.dir;
-const DATA = process.env.ENGLISH_PEER_DATA || join(HOME, ".local", "share", "english-peer");
+export const HOME = homedir();
+export const CODE = import.meta.dir;
+export const DATA = process.env.ENGLISH_PEER_DATA || join(HOME, ".local", "share", "english-peer");
 const HISTORY = join(HOME, ".claude", "history.jsonl");
-const JOURNAL = join(DATA, "journal.jsonl");
+export const JOURNAL = join(DATA, "journal.jsonl");
 const PATTERNS = join(DATA, "patterns.json");
-const CONFIG = join(DATA, "config.json");
+export const CONFIG = join(DATA, "config.json");
 const TEMPLATE = join(CODE, "template.html");
-const PAGE = join(DATA, "out", "english-peer.html");
+export const PAGE = join(DATA, "out", "english-peer.html");
 
 // The daily run's own prompt carries this marker so it never reviews itself.
 const RUN_MARKER = "ENGLISH-COACH-RUN";
@@ -74,14 +48,14 @@ type Config = {
   artifact_url: string | null; ignore_project_prefixes: string[]; ignore_prompts_containing: string[];
   min_words: number; target_prompts: number; max_prompts: number; [k: string]: Json;
 };
-type DayArgs = { date?: string; since?: string; until?: string };
+export type DayArgs = { date?: string; since?: string; until?: string };
 
-function die(msg: string): never {
+export function die(msg: string): never {
   console.error(msg);
   process.exit(1);
 }
 
-function loadJson<T>(path: string, fallback: T): T {
+export function loadJson<T>(path: string, fallback: T): T {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
   } catch (e: any) {
@@ -99,9 +73,9 @@ function jsonLine(v: Json): string {
   return JSON.stringify(v ?? null);
 }
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const isoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const today = () => isoDate(new Date());
+export const pad = (n: number) => String(n).padStart(2, "0");
+export const isoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const today = () => isoDate(new Date());
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return isoDate(d); };
 const words = (s: string) => s.split(/\s+/).filter(Boolean);
 const tilde = (p: string) => p.split(HOME).join("~");
@@ -127,7 +101,7 @@ function config(): Config {
   };
 }
 
-function journal(): Run[] {
+export function journal(): Run[] {
   if (!existsSync(JOURNAL)) return [];
   return readFileSync(JOURNAL, "utf8").split("\n").filter((l) => l.trim())
     .map((l) => JSON.parse(l) as Run).sort((a, b) => a.date.localeCompare(b.date));
@@ -247,12 +221,12 @@ function wordCounts(texts: string[], ws: string[]): Record<string, number> {
   return counts;
 }
 
-function cmdUsed(ws: string[]) {
+export function cmdUsed(ws: string[]) {
   const texts = [...allPrompts(config()).values()].flat().map((p) => p.text);
   for (const [w, n] of Object.entries(wordCounts(texts, ws))) console.log(`${String(n).padStart(5)}  ${w}`);
 }
 
-function cmdPrompts(args: DayArgs & { text?: boolean }) {
+export function cmdPrompts(args: DayArgs & { text?: boolean }) {
   const cfg = config(), runs = journal();
   const byDay = allPrompts(cfg);
   const days = selectDays(args, byDay, runs, cfg);
@@ -261,7 +235,7 @@ function cmdPrompts(args: DayArgs & { text?: boolean }) {
   else console.log(JSON.stringify({ days, prompts }, null, 1));
 }
 
-function cmdContext(args: DayArgs) {
+export function cmdContext(args: DayArgs) {
   const cfg = config(), runs = journal();
   const byDay = allPrompts(cfg);
   const days = selectDays(args, byDay, runs, cfg);
@@ -332,7 +306,7 @@ function validate(entry: Json, defs: Record<string, PatternDef>): string[] {
   return errs;
 }
 
-async function cmdRecord(file: string) {
+export async function cmdRecord(file: string) {
   const entry: Run = JSON.parse(file === "-" ? await Bun.stdin.text() : readFileSync(file, "utf8"));
   const defs = loadJson<Record<string, PatternDef>>(PATTERNS, {});
   const errs = validate(entry, defs);
@@ -358,7 +332,7 @@ async function cmdRecord(file: string) {
     `${entry.findings.length} findings, ${(entry.vocabulary ?? []).length} vocab`);
 }
 
-function cmdRender(runDate?: string) {
+export function renderPage(runDate?: string): string {
   const runs = journal();
   if (!runs.length) die("render: nothing recorded yet");
   const idx = runDate ? runs.findLastIndex((r) => r.date === runDate) : runs.length - 1;
@@ -376,15 +350,19 @@ function cmdRender(runDate?: string) {
       && prev[s.id]?.status !== s.status),
     trend: upto.slice(-14).map((r) => ({ date: r.date, error_rate: r.error_rate ?? null })),
     backlog_days_left: run.backlog_days_left ?? null,
-    search_cmd: `bun ${tilde(join(CODE, "coach.ts"))} search <word>`,
+    search_cmd: "english-peer search <word>",
   };
   const blob = JSON.stringify(data).replaceAll("</", "<\\/");
   mkdirSync(dirname(PAGE), { recursive: true });
   writeFileSync(PAGE, readFileSync(TEMPLATE, "utf8").replace("/*__DATA__*/null", () => blob));
-  console.log(PAGE);
+  return PAGE;
 }
 
-function cmdSearch(term: string) {
+export function cmdRender(runDate?: string) {
+  console.log(renderPage(runDate));
+}
+
+export function cmdSearch(term: string) {
   const t = term.toLowerCase();
   let hits = 0;
   for (const r of journal()) {
@@ -403,14 +381,14 @@ function cmdSearch(term: string) {
   if (!hits) console.log(`nothing found for ${repr(term)}`);
 }
 
-function cmdPatterns(all: boolean) {
+export function cmdPatterns(all: boolean) {
   for (const s of patternStats(journal(), loadJson(PATTERNS, {}))) {
     if (s.status === "mastered" && !all) continue;
     console.log(`${s.status.padEnd(9)} x${String(s.count).padEnd(3)} ${s.runs_seen} reviews  ${s.id}: ${s.label}  (last ${s.last_seen ?? "-"})`);
   }
 }
 
-function cmdStats() {
+export function cmdStats() {
   const runs = journal();
   if (!runs.length) console.log("no reviews yet");
   for (const r of runs.slice(-14)) {
@@ -421,7 +399,7 @@ function cmdStats() {
   }
 }
 
-function cmdBacklog() {
+export function cmdBacklog() {
   const cfg = config(), runs = journal();
   const done = coveredDays(runs);
   const rows = [...allPrompts(cfg).entries()].sort(([a], [b]) => a.localeCompare(b)).filter(([d]) => !done.has(d));
@@ -429,46 +407,10 @@ function cmdBacklog() {
   console.log(`${rows.length} unreviewed days, ${rows.reduce((n, [, ps]) => n + ps.length, 0)} prompts`);
 }
 
-function cmdSetUrl(url: string) {
+export function cmdSetUrl(url: string) {
   const cfg = loadJson<Record<string, Json>>(CONFIG, {});
   cfg.artifact_url = url;
   writeFileSync(CONFIG, JSON.stringify(cfg, null, 1) + "\n");
   console.log(`artifact_url = ${url}`);
 }
 
-function usage(code = 0): never {
-  (code ? console.error : console.log)(`usage: coach.ts <command> [options]\n\n${DOC}`);
-  process.exit(code);
-}
-
-async function main() {
-  const [cmd, ...rest] = Bun.argv.slice(2);
-  if (!cmd || cmd === "-h" || cmd === "--help") usage(cmd ? 0 : 2);
-  const parse = <O extends ParseArgsOptionsConfig>(options: O, positionals = 0) => {
-    try {
-      const r = parseArgs({ args: rest, options, allowPositionals: positionals !== 0 });
-      if (positionals > 0 && r.positionals.length !== positionals) throw new Error(`expected ${positionals} argument(s)`);
-      if (positionals < 0 && !r.positionals.length) throw new Error("expected at least one argument");
-      return r;
-    } catch (e: any) {
-      console.error(`coach.ts ${cmd}: ${e.message}`);
-      process.exit(2);
-    }
-  };
-  const days = { date: { type: "string" }, since: { type: "string" }, until: { type: "string" } } as const;
-  switch (cmd) {
-    case "context": return cmdContext(parse(days).values);
-    case "prompts": return cmdPrompts(parse({ ...days, text: { type: "boolean" } }).values);
-    case "record": return cmdRecord(parse({}, 1).positionals[0]);
-    case "render": return cmdRender(parse({ run: { type: "string" } }).values.run);
-    case "search": return cmdSearch(parse({}, 1).positionals[0]);
-    case "patterns": return cmdPatterns(!!parse({ all: { type: "boolean" } }).values.all);
-    case "stats": parse({}); return cmdStats();
-    case "backlog": parse({}); return cmdBacklog();
-    case "set-url": return cmdSetUrl(parse({}, 1).positionals[0]);
-    case "used": return cmdUsed(parse({}, -1).positionals);
-    default: usage(2);
-  }
-}
-
-await main();

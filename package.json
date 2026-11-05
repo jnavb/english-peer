@@ -2,6 +2,9 @@
   "name": "english-peer",
   "private": true,
   "type": "module",
+  "bin": {
+    "english-peer": "cli.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
