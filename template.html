@@ -1,0 +1,253 @@
+<title>English Peer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,750&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one narrow reading column, laid out like a code review: each correction is a small -/+ diff hunk. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #18202c;
+  --muted: #5b6676;
+  --line: #dde2ea;
+  --accent: #2f5bd3;
+  --accent-soft: #e6ecfb;
+  --del: #b4322a;
+  --del-bg: #fbeceb;
+  --add: #1c7a43;
+  --add-bg: #e7f5ec;
+  --warn: #a35d00;
+  --warn-bg: #fdf1df;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #181d26; --fg: #e4e8ef; --muted: #98a2b3; --line: #2a313d;
+    --accent: #85a5ff; --accent-soft: #1e2a47;
+    --del: #ff8f86; --del-bg: #3a1f1f; --add: #6fd69a; --add-bg: #17331f;
+    --warn: #f0b45c; --warn-bg: #3a2b14;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #181d26; --fg: #e4e8ef; --muted: #98a2b3; --line: #2a313d;
+  --accent: #85a5ff; --accent-soft: #1e2a47;
+  --del: #ff8f86; --del-bg: #3a1f1f; --add: #6fd69a; --add-bg: #17331f;
+  --warn: #f0b45c; --warn-bg: #3a2b14;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 17px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 44rem; margin: 0 auto; padding-block: 2.5rem 4rem; display: grid; gap: 2.75rem; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(1.6rem, 4.5vw, 2.15rem); font-weight: 750; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; font-weight: 600; display: flex; align-items: baseline; gap: .6rem; }
+h2 .n { font: 600 .75rem var(--mono); color: var(--muted); }
+section { display: grid; gap: 1rem; }
+.eyebrow { font: 600 .72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+
+header { display: grid; gap: 1rem; }
+.meta { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; font: .8rem var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta b { color: var(--fg); font-weight: 600; }
+.spark { display: flex; align-items: center; gap: .5rem; }
+.spark svg { display: block; overflow: visible; }
+.pill { font: 600 .7rem var(--mono); padding: .15rem .5rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+
+/* diff hunk */
+.hunk { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.hunk-head { display: flex; flex-wrap: wrap; gap: .4rem .75rem; align-items: center; justify-content: space-between; padding: .45rem .8rem; border-bottom: 1px solid var(--line); font: .72rem var(--mono); color: var(--muted); }
+.row { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); font-size: 1rem; }
+.row > span:first-child { font: 600 .9rem var(--mono); text-align: center; padding-top: .35rem; }
+.row > div { padding: .35rem .8rem .35rem 0; overflow-wrap: anywhere; }
+.row.del { background: var(--del-bg); } .row.del > span:first-child { color: var(--del); }
+.row.add { background: var(--add-bg); } .row.add > span:first-child { color: var(--add); }
+.why { padding: .5rem .8rem .6rem 2.4rem; font-size: .92rem; color: var(--muted); font-style: italic; }
+.list { display: grid; gap: .75rem; }
+
+.repeat { display: grid; gap: .6rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 4px 8px 8px 4px; background: var(--surface); }
+.repeat-top { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; justify-content: space-between; }
+.repeat-top strong { font-family: var(--display); font-weight: 600; }
+.rule { font-size: .98rem; }
+
+.vocab { width: 100%; border-collapse: collapse; font-size: .98rem; }
+.vocab th { text-align: left; font: 600 .7rem var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 0 .75rem .5rem 0; border-bottom: 1px solid var(--line); }
+.vocab td { padding: .65rem .75rem .65rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.vocab .weak { color: var(--del); text-decoration: line-through; text-decoration-thickness: 1px; white-space: nowrap; }
+.vocab .strong { color: var(--add); font-weight: 600; white-space: nowrap; }
+.table-wrap { overflow-x: auto; }
+
+.native { display: grid; gap: .75rem; }
+.native blockquote { margin: 0; padding: .9rem 1.1rem; border-radius: 8px; overflow-wrap: anywhere; }
+.native .before { background: var(--surface); border: 1px dashed var(--line); color: var(--muted); }
+.native .after { background: var(--accent-soft); font-size: 1.05rem; }
+.native .label { display: block; margin-bottom: .3rem; }
+
+.learn-group { display: grid; gap: .55rem; }
+.learn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem; }
+.learn-item { display: grid; gap: .3rem; align-content: start; padding: .8rem .95rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: .95rem; min-width: 0; }
+.learn-head { display: flex; flex-wrap: wrap; gap: .4rem; align-items: baseline; justify-content: space-between; }
+.learn-head strong { font-family: var(--display); font-weight: 600; font-size: 1.05rem; color: var(--accent); }
+.learn-ex { font-style: italic; overflow-wrap: anywhere; }
+.alt { padding: .8rem .95rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: grid; gap: .45rem; }
+.alt-src { color: var(--muted); overflow-wrap: anywhere; }
+.alt ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .25rem; }
+.alt li::marker { color: var(--accent); }
+.wins { display: grid; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+.wins li { display: flex; gap: .6rem; align-items: baseline; }
+.wins li::before { content: "✓"; color: var(--add); font-family: var(--mono); font-weight: 600; }
+
+details { border-top: 1px solid var(--line); padding-top: 1rem; }
+summary { cursor: pointer; font: 600 .85rem var(--display); }
+summary:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.tracker { display: grid; gap: .35rem; margin-top: .8rem; font-size: .92rem; }
+.tracker div { display: grid; grid-template-columns: 5.5rem 2.5rem minmax(0, 1fr); gap: .5rem; align-items: baseline; }
+.tracker .c { font: .8rem var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+footer { display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; font: .78rem var(--mono); color: var(--muted); }
+footer code { background: var(--surface); border: 1px solid var(--line); padding: .2rem .45rem; border-radius: 4px; overflow-wrap: anywhere; }
+footer button { font: inherit; color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 4px; padding: .2rem .5rem; cursor: pointer; }
+.clean { padding: 1.25rem; background: var(--add-bg); border-radius: 8px; }
+</style>
+
+<main id="app"></main>
+
+<script id="coach-data" type="application/json">/*__DATA__*/null</script>
+<script>
+(() => {
+  const data = JSON.parse(document.getElementById("coach-data").textContent);
+  const app = document.getElementById("app");
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmt = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  if (!data) { app.innerHTML = "<p>No review data yet.</p>"; return; }
+
+  const { run, patterns, repeats, wins, trend } = data;
+  const days = run.days || [];
+  const span = days.length > 1 ? `${fmt(days[0])} – ${fmt(days[days.length - 1])}` : days.length ? fmt(days[0]) : "no prompts";
+  const shown = run.findings.filter(f => f.show);
+  const repeatSet = new Set(repeats);
+
+  function sparkline() {
+    const pts = trend.filter(t => t.error_rate != null);
+    if (pts.length < 2) return `<span class="pill">first review</span>`;
+    const w = 112, h = 26, max = Math.max(...pts.map(p => p.error_rate), 0.1);
+    const xy = pts.map((p, i) => [i * (w / (pts.length - 1)), h - (p.error_rate / max) * h]);
+    const path = xy.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    const last = xy[xy.length - 1], prev = pts[pts.length - 2].error_rate, cur = pts[pts.length - 1].error_rate;
+    const dir = cur < prev ? "down" : cur > prev ? "up" : "flat";
+    return `<span class="spark" title="errors per 100 words, last ${pts.length} reviews">
+      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+        <path d="${path} L ${w} ${h} L 0 ${h} Z" fill="var(--accent-soft)"></path>
+        <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="1.5"></path>
+        <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="var(--accent)"></circle>
+      </svg><span>${dir === "down" ? "↓ fewer than last time" : dir === "up" ? "↑ more than last time" : "same as last time"}</span></span>`;
+  }
+
+  function hunk(f, i) {
+    const p = patterns[f.pattern_id];
+    const tag = repeatSet.has(f.pattern_id) ? `<span class="pill warn">repeat ×${p.count}</span>` : p ? `<span class="pill">${esc(p.label)}</span>` : "";
+    return `<article class="hunk">
+      <div class="hunk-head"><span>${esc(f.kind)}${f.prompt_id ? " · " + esc(f.prompt_id) : ""}</span>${tag}</div>
+      <div class="row del"><span>−</span><div>${esc(f.original)}</div></div>
+      <div class="row add"><span>+</span><div>${esc(f.corrected)}</div></div>
+      <div class="why">${esc(f.why)}</div>
+    </article>`;
+  }
+
+  const html = [];
+  html.push(`<header>
+    <div class="eyebrow">English Peer · ${span}${data.backlog_days_left ? ` · ${data.backlog_days_left} older days still to review` : ""}</div>
+    <h1>${esc(run.headline)}</h1>
+    <div class="meta">
+      <span><b>${run.prompt_count}</b> prompts</span>
+      <span><b>${run.word_count}</b> words</span>
+      <span><b>${run.error_rate ?? "–"}</b> errors / 100 words</span>
+      ${sparkline()}
+    </div>
+  </header>`);
+
+  if (!run.findings.length && run.prompt_count) {
+    html.push(`<div class="clean">Clean English this time. Nothing worth correcting.</div>`);
+  }
+
+  const topRepeats = [...repeats].sort((a, b) => patterns[b].count - patterns[a].count).slice(0, 4);
+  if (topRepeats.length) {
+    html.push(`<section><h2>Still happening <span class="n">${topRepeats.length < repeats.length ? `top ${topRepeats.length} of ${repeats.length}` : repeats.length}</span></h2>${topRepeats.map(id => {
+      const p = patterns[id];
+      const today = run.findings.find(f => f.pattern_id === id);
+      return `<div class="repeat">
+        <div class="repeat-top"><strong>${esc(p.label)}</strong><span class="pill warn">${p.count}× in ${p.runs_seen} reviews</span></div>
+        <div class="rule">${esc(p.rule)}</div>
+        ${today ? `<div class="mono muted" style="font-size:.85rem">${esc(today.original)} → <span style="color:var(--add)">${esc(today.corrected)}</span></div>` : ""}
+      </div>`;
+    }).join("")}</section>`);
+  }
+
+  if (shown.length) {
+    const rest = run.findings.length - shown.length;
+    html.push(`<section><h2>Corrections <span class="n">${shown.length}${rest > 0 ? ` of ${run.findings.length}` : ""}</span></h2>
+      <div class="list">${shown.map(hunk).join("")}</div></section>`);
+  }
+
+  if (run.vocabulary?.length) {
+    html.push(`<section><h2>Better words <span class="n">${run.vocabulary.length}</span></h2>
+      <div class="table-wrap"><table class="vocab"><thead><tr><th>Instead of</th><th>Use</th><th>Example</th></tr></thead><tbody>
+      ${run.vocabulary.map(v => `<tr><td class="weak">${esc(v.instead_of)}</td><td class="strong">${esc(v.use)}</td><td>${esc(v.example)}</td></tr>`).join("")}
+      </tbody></table></div></section>`);
+  }
+
+  const learn = run.learn || {};
+  const lcard = (head, meaning, example, extra) => `<div class="learn-item">
+      <div class="learn-head"><strong>${esc(head)}</strong>${extra || ""}</div>
+      <div class="muted">${esc(meaning)}</div>
+      <div class="learn-ex">${esc(example)}</div></div>`;
+  const groups = [
+    ["New verbs", (learn.verbs || []).map(v => lcard(v.verb, v.meaning, v.example, v.replaces ? `<span class="pill">instead of ${esc(v.replaces)}</span>` : ""))],
+    ["Phrasal verbs", (learn.phrasal_verbs || []).map(v => lcard(v.phrase, v.meaning, v.example))],
+    ["New words", (learn.words || []).map(v => lcard(v.word, v.meaning, v.example))],
+  ].filter(g => g[1].length);
+  if (groups.length || learn.alternatives?.length) {
+    html.push(`<section><h2>Learn</h2>
+      ${groups.map(([t, items]) => `<div class="learn-group"><div class="eyebrow">${t}</div><div class="learn-grid">${items.join("")}</div></div>`).join("")}
+      ${(learn.alternatives || []).map(a => `<div class="learn-group"><div class="eyebrow">Other ways to say it</div>
+        <div class="alt"><div class="alt-src">You wrote: ${esc(a.you_wrote)}</div><ul>${(a.options || []).map(o => `<li>${esc(o)}</li>`).join("")}</ul></div></div>`).join("")}
+    </section>`);
+  }
+
+  if (run.native_rewrite) {
+    html.push(`<section class="native"><h2>Say it like a native</h2>
+      <blockquote class="before"><span class="eyebrow label">You wrote</span>${esc(run.native_rewrite.original)}</blockquote>
+      <blockquote class="after"><span class="eyebrow label">Natural version</span>${esc(run.native_rewrite.rewrite)}</blockquote></section>`);
+  }
+
+  if (wins.length) {
+    html.push(`<section><h2>Progress</h2><ul class="wins">${wins.map(w =>
+      `<li><span><b>${esc(w.label)}</b>: ${w.status === "mastered" ? "mastered, gone for " : "not seen in the last "}${w.runs_since_last_seen} reviews</span></li>`).join("")}</ul></section>`);
+  }
+
+  const tracked = Object.values(patterns).filter(p => p.count).sort((a, b) => b.count - a.count);
+  if (tracked.length) {
+    html.push(`<details><summary>All tracked patterns (${tracked.length})</summary><div class="tracker">${tracked.map(p =>
+      `<div><span class="pill ${p.status === "active" ? "warn" : ""}">${p.status}</span><span class="c">×${p.count}</span><span><b>${esc(p.label)}</b> <span class="muted">${esc(p.rule)}</span></span></div>`).join("")}</div></details>`);
+  }
+
+  const cmd = data.search_cmd;
+  html.push(`<footer><span>Search past reviews:</span><code id="cmd">${esc(cmd)}</code><button type="button" id="copy">Copy</button></footer>`);
+  app.innerHTML = html.join("");
+
+  document.getElementById("copy").addEventListener("click", e => {
+    navigator.clipboard.writeText(cmd).then(() => { e.target.textContent = "Copied"; }).catch(() => {
+      const r = document.createRange(); r.selectNodeContents(document.getElementById("cmd"));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    });
+  });
+})();
+</script>
