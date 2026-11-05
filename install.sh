@@ -44,7 +44,7 @@ fi
 
 # 1. requirements
 [[ "$(uname)" == Darwin ]] || die "macOS only (uses launchd and notifications)"
-command -v python3 >/dev/null || die "python3 not found"
+command -v bun >/dev/null || die "bun not found; install it from https://bun.sh"
 CLAUDE_BIN=$(command -v claude || true)
 [[ -n "$CLAUDE_BIN" ]] || die "claude CLI not found; install Claude Code and log in first"
 [[ "$TIME" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || die "--time must be HH:MM, got $TIME"
@@ -75,32 +75,26 @@ done
 
 # 3. data dir and config (existing settings are kept)
 mkdir -p "$DATA/logs" "$DATA/inbox" "$DATA/out"
-python3 - "$DATA/config.json" "$LANGUAGE" <<'EOF'
-import json, sys
-path, language = sys.argv[1], sys.argv[2]
-try:
-    cfg = json.load(open(path))
-except FileNotFoundError:
-    cfg = {}
-defaults = {
-    "native_language": "Spanish",
-    "model": "opus",
-    "ignore_project_prefixes": ["/private/tmp", "/tmp"],
-    "ignore_prompts_containing": [],
-    "min_words": 3,
-    "target_prompts": 150,
-    "max_prompts": 300,
-}
-cfg = {**defaults, **cfg}
-if language:
-    cfg["native_language"] = language
-json.dump(cfg, open(path, "w"), indent=1)
-open(path, "a").write("\n")
-print(f"config: {path} (native language: {cfg['native_language']}, model: {cfg['model']})")
+bun - "$DATA/config.json" "$LANGUAGE" <<'EOF'
+const [path, language] = Bun.argv.slice(2);
+const file = Bun.file(path);
+const defaults = {
+  native_language: "Spanish",
+  model: "opus",
+  ignore_project_prefixes: ["/private/tmp", "/tmp"],
+  ignore_prompts_containing: [],
+  min_words: 3,
+  target_prompts: 150,
+  max_prompts: 300,
+};
+const cfg = { ...defaults, ...((await file.exists()) ? await file.json() : {}) };
+if (language) cfg.native_language = language;
+await Bun.write(path, JSON.stringify(cfg, null, 1) + "\n");
+console.log(`config: ${path} (native language: ${cfg.native_language}, model: ${cfg.model})`);
 EOF
 
 # 4. daily job
-chmod +x "$CODE/run.sh" "$CODE/coach.py"
+chmod +x "$CODE/run.sh" "$CODE/coach.ts"
 mkdir -p "${PLIST:h}"
 cat >"$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -131,4 +125,4 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST"
 launchctl print "gui/$(id -u)/$LABEL" >/dev/null || die "launchd did not load $LABEL"
 
 say "Installed. Daily review at $TIME (or on wake/login), data in $DATA"
-say "Try: python3 $CODE/coach.py search <word>   |   FORCE=1 $CODE/run.sh for an extra batch"
+say "Try: bun $CODE/coach.ts search <word>   |   FORCE=1 $CODE/run.sh for an extra batch"
