@@ -22,6 +22,7 @@ Run `cli.ts context`. It returns JSON with:
 - `already_taught`: every word, verb and phrasal verb you've already taught
   me. Don't suggest these again unless I misused them again.
 - `weak_verb_counts`: how often I used the vague everyday verbs in this batch
+- `recent_tenses`: verb tenses and structures the last reviews already covered
 - `artifact_url`: the page to update, or null the first time
 
 If `prompts` is empty, there's nothing left to review: stop and say so in one
@@ -84,6 +85,19 @@ Also produce:
     precise
   - `alternatives`: one thing I wrote, with 2–3 other natural ways to say it,
     from casual to more careful
+  - `tenses`: **1, at most 2** verb tenses or structures, to widen the range
+    I actually use. Look at which ones I lean on (usually present simple,
+    "I want", "can you") and which I avoid or get wrong. Pick, in order:
+    1. a tense I got wrong in this batch (say "I'm working on this since
+       Monday" → present perfect continuous). Put my words in `you_wrote`.
+    2. a tense or structure I never use but could have used here: present
+       perfect vs past simple, present perfect continuous, past continuous,
+       past perfect, future continuous, "going to" vs "will", first, second,
+       third and mixed conditionals, "should have" / "could have" / "might
+       have", "used to", passive voice, "wish" / "if only", reported speech.
+    Skip anything in `recent_tenses` unless I got it wrong again. `form` is
+    the pattern ("had + past participle"), `use` says when to pick it in
+    ≤ 12 words, and `example` rewrites one of my real sentences with it.
 
   Before you suggest a verb, phrasal verb or word as "new", check it with
   `cli.ts used <word> <word> ...`. Only suggest it if the count is 0 or 1.
@@ -120,7 +134,8 @@ pipes, because unattended runs block them.
         "verbs": [{"verb": "...", "meaning": "...", "example": "...", "replaces": "my weak verb"}],
         "phrasal_verbs": [{"phrase": "...", "meaning": "...", "example": "..."}],
         "words": [{"word": "...", "meaning": "...", "example": "..."}],
-        "alternatives": [{"you_wrote": "...", "options": ["...", "...", "..."]}]
+        "alternatives": [{"you_wrote": "...", "options": ["...", "...", "..."]}],
+        "tenses": [{"tense": "...", "form": "...", "use": "...", "example": "...", "you_wrote": "only if I got it wrong"}]
       },
       "new_patterns": [{"id": "kebab-id", "label": "...", "kind": "...", "rule": "..."}]
     }

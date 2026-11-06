@@ -1,7 +1,7 @@
 // The daily job: installing it in launchd, and the review run it starts each day.
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmdirSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { CODE, CONFIG, DATA, HOME, PAGE, die, isoDate, journal, loadJson, pad, renderPage, today } from "./coach";
+import { CODE, CONFIG, DATA, HOME, die, isoDate, journal, loadJson, pad, renderPage, today } from "./coach";
 
 const LABEL = "com.english-peer.daily";
 const PLIST = join(HOME, "Library", "LaunchAgents", `${LABEL}.plist`);
@@ -137,8 +137,7 @@ export async function cmdRun(force: boolean) {
 
     const latest = latestRun();
     if (latest && latest.recorded_at !== before) {
-      renderPage();
-      sh("open", PAGE);
+      sh("open", renderPage());
       notify("Today's review is open in your browser", latest.headline);
     } else {
       notify("No review recorded today", `See the log in ${join(DATA, "logs")}`);

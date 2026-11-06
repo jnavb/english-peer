@@ -1,7 +1,7 @@
 // The review commands: reading prompts, recording reviews and rendering the page.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 export const HOME = homedir();
 export const CODE = import.meta.dir;
@@ -11,7 +11,7 @@ export const JOURNAL = join(DATA, "journal.jsonl");
 const PATTERNS = join(DATA, "patterns.json");
 export const CONFIG = join(DATA, "config.json");
 const TEMPLATE = join(CODE, "template.html");
-export const PAGE = join(DATA, "out", "english-peer.html");
+const OUT = join(DATA, "out"); // one page per review, kept so older days can be reread
 
 // The daily run's own prompt carries this marker so it never reviews itself.
 const RUN_MARKER = "ENGLISH-COACH-RUN";
@@ -25,7 +25,10 @@ const LEARN_FIELDS: Record<string, string[]> = {
   phrasal_verbs: ["phrase", "meaning", "example"],
   words: ["word", "meaning", "example"],
   alternatives: ["you_wrote", "options"],
+  tenses: ["tense", "form", "use", "example"],
 };
+// tenses are a small closed set, so they rotate instead of being taught once
+const ONCE_ONLY = ["verbs", "phrasal_verbs", "words"];
 const MASTERED_AFTER_RUNS = 14; // pattern absent from this many later reviews -> mastered
 const IMPROVING_AFTER_RUNS = 3;
 
@@ -206,9 +209,8 @@ function patternStats(runs: Run[], defs: Record<string, PatternDef>): PatternSta
 function taught(runs: Run[]): string[] {
   const out = new Set(runs.flatMap((r) => (r.vocabulary ?? []).map((v) => v.use.toLowerCase())));
   for (const r of runs)
-    for (const [key, fields] of Object.entries(LEARN_FIELDS))
-      if (key !== "alternatives")
-        for (const i of r.learn?.[key] ?? []) out.add(String(i[fields[0]]).toLowerCase());
+    for (const key of ONCE_ONLY)
+      for (const i of r.learn?.[key] ?? []) out.add(String(i[LEARN_FIELDS[key][0]]).toLowerCase());
   return [...out].sort();
 }
 
@@ -262,6 +264,7 @@ export function cmdContext(args: DayArgs) {
       pattern_ids: [...new Set((r.findings ?? []).map((f) => f.pattern_id).filter(Boolean))].sort(),
     })),
     already_taught: taught(runs),
+    recent_tenses: runs.slice(-10).flatMap((r) => (r.learn?.tenses ?? []).map((t) => t.tense)),
     weak_verb_counts: Object.fromEntries(Object.entries(wordCounts(texts, WEAK_VERBS))
       .sort((a, b) => b[1] - a[1]).filter(([, n]) => n)),
   }, null, 1));
@@ -293,7 +296,8 @@ function validate(entry: Json, defs: Record<string, PatternDef>): string[] {
       errs.push(`learn.${key} unknown; use ${pyList(Object.keys(LEARN_FIELDS).sort())}`);
       continue;
     }
-    if (items.length > 3) errs.push(`learn.${key} has ${items.length} items; max 3 to keep the page short`);
+    const max = key === "tenses" ? 2 : 3;
+    if (items.length > max) errs.push(`learn.${key} has ${items.length} items; max ${max} to keep the page short`);
     items.forEach((item, i) => {
       for (const field of LEARN_FIELDS[key])
         if (!item[field]) errs.push(`learn.${key}[${i}] missing '${field}'`);
@@ -332,6 +336,12 @@ export async function cmdRecord(file: string) {
     `${entry.findings.length} findings, ${(entry.vocabulary ?? []).length} vocab`);
 }
 
+/** out/<date>.html, or <date>-2.html for a second review recorded the same day. */
+function pagePath(runs: Run[], idx: number): string {
+  const n = runs.slice(0, idx + 1).filter((r) => r.date === runs[idx].date).length;
+  return join(OUT, `${runs[idx].date}${n > 1 ? `-${n}` : ""}.html`);
+}
+
 export function renderPage(runDate?: string): string {
   const runs = journal();
   if (!runs.length) die("render: nothing recorded yet");
@@ -353,13 +363,20 @@ export function renderPage(runDate?: string): string {
     search_cmd: "english-peer search <word>",
   };
   const blob = JSON.stringify(data).replaceAll("</", "<\\/");
-  mkdirSync(dirname(PAGE), { recursive: true });
-  writeFileSync(PAGE, readFileSync(TEMPLATE, "utf8").replace("/*__DATA__*/null", () => blob));
-  return PAGE;
+  const page = pagePath(runs, idx);
+  mkdirSync(OUT, { recursive: true });
+  writeFileSync(page, readFileSync(TEMPLATE, "utf8").replace("/*__DATA__*/null", () => blob));
+  return page;
 }
 
 export function cmdRender(runDate?: string) {
   console.log(renderPage(runDate));
+}
+
+export function cmdOpen(runDate?: string) {
+  const page = renderPage(runDate);
+  Bun.spawnSync(["open", page]);
+  console.log(page);
 }
 
 export function cmdSearch(term: string) {

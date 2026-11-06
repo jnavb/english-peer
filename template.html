@@ -98,6 +98,8 @@ header { display: grid; gap: 1rem; }
 .learn-head { display: flex; flex-wrap: wrap; gap: .4rem; align-items: baseline; justify-content: space-between; }
 .learn-head strong { font-family: var(--display); font-weight: 600; font-size: 1.05rem; color: var(--accent); }
 .learn-ex { font-style: italic; overflow-wrap: anywhere; }
+.tense-form { font: 600 .78rem var(--mono); color: var(--fg); background: var(--accent-soft); padding: .15rem .45rem; border-radius: 4px; justify-self: start; overflow-wrap: anywhere; }
+.tense-was { font: .85rem var(--mono); color: var(--del); text-decoration: line-through; text-decoration-thickness: 1px; overflow-wrap: anywhere; }
 .alt { padding: .8rem .95rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: grid; gap: .45rem; }
 .alt-src { color: var(--muted); overflow-wrap: anywhere; }
 .alt ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .25rem; }
@@ -213,6 +215,12 @@ footer button { font: inherit; color: var(--accent); background: none; border: 1
     ["New verbs", (learn.verbs || []).map(v => lcard(v.verb, v.meaning, v.example, v.replaces ? `<span class="pill">instead of ${esc(v.replaces)}</span>` : ""))],
     ["Phrasal verbs", (learn.phrasal_verbs || []).map(v => lcard(v.phrase, v.meaning, v.example))],
     ["New words", (learn.words || []).map(v => lcard(v.word, v.meaning, v.example))],
+    ["Verb tenses", (learn.tenses || []).map(t => `<div class="learn-item">
+      <div class="learn-head"><strong>${esc(t.tense)}</strong></div>
+      <div class="tense-form">${esc(t.form)}</div>
+      <div class="muted">${esc(t.use)}</div>
+      ${t.you_wrote ? `<div class="tense-was">${esc(t.you_wrote)}</div>` : ""}
+      <div class="learn-ex">${esc(t.example)}</div></div>`)],
   ].filter(g => g[1].length);
   if (groups.length || learn.alternatives?.length) {
     html.push(`<section><h2>Learn</h2>

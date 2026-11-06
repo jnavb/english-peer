@@ -3,8 +3,8 @@
 A daily review of the English you write to Claude Code, built for non-native
 speakers. Every morning it reads the prompts you typed the day before and
 opens a page you can read in five minutes. The page covers grammar fixes,
-mistakes you keep repeating, better verbs, phrasal verbs, new words, and other
-ways to say what you wrote. Typos are ignored.
+mistakes you keep repeating, better verbs, phrasal verbs, new words, a verb
+tense or conditional you rarely use, and other ways to say what you wrote. Typos are ignored.
 
 ## Install
 
@@ -48,6 +48,7 @@ to change the location.
 | `journal.jsonl` | one line per review: every finding, word and rewrite |
 | `patterns.json` | your recurring mistakes |
 | `config.json` | native language, model, filters, batch sizes |
+| `out/` | one page per review, `2026-11-06.html`; older pages are never overwritten |
 | `logs/` | one log per day |
 
 ## Commands
@@ -57,6 +58,7 @@ to change the location.
     english-peer stats             # the last 14 reviews
     english-peer backlog           # days not reviewed yet
     english-peer used tackle       # how often you've written a word
+    english-peer open 2026-11-05   # reopen an older day's page (no date: the latest)
     english-peer run --force       # run an extra review today
     english-peer --help            # everything else
 

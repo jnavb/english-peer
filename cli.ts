@@ -16,6 +16,7 @@ Look things up:
   stats                                         last 14 reviews
   backlog                                       unreviewed days with prompt counts
   used     WORD [WORD...]                       how often I've written each word/phrase, ever
+  open     [DATE]                               open a review's page (default: the latest)
 
 Used by the review session:
   context  [--date D | --since D [--until D]]   everything the daily run needs, as JSON
@@ -28,6 +29,7 @@ Data (in $ENGLISH_PEER_DATA, default ~/.local/share/english-peer):
   journal.jsonl   one line per review run (append-only, greppable)
   patterns.json   recurring mistakes: definitions; stats are derived from the journal
   config.json     native language, model, artifact url, filters, batch sizes
+  out/            one page per review (DATE.html), never overwritten
   logs/           one log per day
 
 Day selection (no flags): unreviewed days, newest first, starting with
@@ -43,11 +45,12 @@ function usage(code = 0): never {
 async function main() {
   const [cmd, ...rest] = Bun.argv.slice(2);
   if (!cmd || cmd === "-h" || cmd === "--help") usage(cmd ? 0 : 2);
-  const parse = <O extends ParseArgsOptionsConfig>(options: O, positionals = 0) => {
+  const parse = <O extends ParseArgsOptionsConfig>(options: O, positionals: number | "?" = 0) => {
     try {
       const r = parseArgs({ args: rest, options, allowPositionals: positionals !== 0 });
-      if (positionals > 0 && r.positionals.length !== positionals) throw new Error(`expected ${positionals} argument(s)`);
-      if (positionals < 0 && !r.positionals.length) throw new Error("expected at least one argument");
+      if (positionals === "?" && r.positionals.length > 1) throw new Error("expected at most one argument");
+      if (typeof positionals === "number" && positionals > 0 && r.positionals.length !== positionals) throw new Error(`expected ${positionals} argument(s)`);
+      if (typeof positionals === "number" && positionals < 0 && !r.positionals.length) throw new Error("expected at least one argument");
       return r;
     } catch (e: any) {
       console.error(`english-peer ${cmd}: ${e.message}`);
@@ -64,6 +67,7 @@ async function main() {
     case "stats": parse({}); return coach.cmdStats();
     case "backlog": parse({}); return coach.cmdBacklog();
     case "used": return coach.cmdUsed(parse({}, -1).positionals);
+    case "open": return coach.cmdOpen(parse({}, "?").positionals[0]);
     case "context": return coach.cmdContext(parse(days).values);
     case "prompts": return coach.cmdPrompts(parse({ ...days, text: { type: "boolean" } }).values);
     case "record": return coach.cmdRecord(parse({}, 1).positionals[0]);
